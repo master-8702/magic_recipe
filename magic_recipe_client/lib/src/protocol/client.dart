@@ -14,6 +14,21 @@ import 'dart:async' as _i2;
 import 'package:magic_recipe_client/src/protocol/greeting.dart' as _i3;
 import 'protocol.dart' as _i4;
 
+/// {@category Endpoint}
+class EndpointRecipes extends _i1.EndpointRef {
+  EndpointRecipes(_i1.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'recipes';
+
+  _i2.Future<String> generateRecipe(String ingredients) =>
+      caller.callServerEndpoint<String>(
+        'recipes',
+        'generateRecipe',
+        {'ingredients': ingredients},
+      );
+}
+
 /// This is an example endpoint that returns a greeting message through its [hello] method.
 /// {@category Endpoint}
 class EndpointGreeting extends _i1.EndpointRef {
@@ -57,13 +72,19 @@ class Client extends _i1.ServerpodClientShared {
           disconnectStreamsOnLostInternetConnection:
               disconnectStreamsOnLostInternetConnection,
         ) {
+    recipes = EndpointRecipes(this);
     greeting = EndpointGreeting(this);
   }
+
+  late final EndpointRecipes recipes;
 
   late final EndpointGreeting greeting;
 
   @override
-  Map<String, _i1.EndpointRef> get endpointRefLookup => {'greeting': greeting};
+  Map<String, _i1.EndpointRef> get endpointRefLookup => {
+        'recipes': recipes,
+        'greeting': greeting,
+      };
 
   @override
   Map<String, _i1.ModuleEndpointCaller> get moduleLookup => {};

@@ -63,19 +63,32 @@ class MyHomePageState extends State<MyHomePage> {
 
   final _textEditingController = TextEditingController();
 
-  /// Calls the `hello` method of the `greeting` endpoint. Will set either the
-  /// `_resultMessage` or `_errorMessage` field, depending on if the call
-  /// is successful.
-  void _callHello() async {
+  bool _isLoading = false;
+
+  void _callGenerateRecipe() async {
     try {
-      final result = await client.greeting.hello(_textEditingController.text);
       setState(() {
+        // Reset the result and error messages and set loading state.
         _errorMessage = null;
-        _resultMessage = result.message;
+        _resultMessage = null;
+        _isLoading = true;
+      });
+
+      final result =
+          await client.recipes.generateRecipe(_textEditingController.text);
+
+      setState(() {
+        // Set the result message and reset the error message.
+        _errorMessage = null;
+        _resultMessage = result;
+        _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _errorMessage = '$e';
+        // If an error occurs, set the error message and reset the result message.
+        _errorMessage = e.toString();
+        _resultMessage = null;
+        _isLoading = false;
       });
     }
   }
@@ -95,20 +108,39 @@ class MyHomePageState extends State<MyHomePage> {
               child: TextField(
                 controller: _textEditingController,
                 decoration: const InputDecoration(
-                  hintText: 'Enter your name',
+                  hintText:
+                      'Enter ingredients (e.g. "chicken, rice, broccoli")',
+                  // label: Text('Ingredients'),
                 ),
               ),
             ),
             Padding(
               padding: const EdgeInsets.only(bottom: 16.0),
               child: ElevatedButton(
-                onPressed: _callHello,
-                child: const Text('Send to Server'),
+                // prevent the user from calling the method again while the 
+                //request is in progress.
+                onPressed: _isLoading ? null : _callGenerateRecipe,
+
+                child: _isLoading
+                    ? Column(
+                        children: [
+                          // Show a loading indicator and a message while the
+                          // request is in progress.
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 8),
+                          const Text('Loading...'),
+                        ],
+                      )
+                    : const Text('Generate Recipe'),
               ),
             ),
-            ResultDisplay(
-              resultMessage: _resultMessage,
-              errorMessage: _errorMessage,
+            Expanded(
+              child: SingleChildScrollView(
+                child: ResultDisplay(
+                  resultMessage: _resultMessage,
+                  errorMessage: _errorMessage,
+                ),
+              ),
             ),
           ],
         ),
