@@ -35,11 +35,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Serverpod Demo',
+      title: 'magic recipe generator',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Serverpod Example'),
+      home: const MyHomePage(title: 'Magic Recipe Generator'),
     );
   }
 }
@@ -56,6 +56,8 @@ class MyHomePage extends StatefulWidget {
 class MyHomePageState extends State<MyHomePage> {
   /// Holds the last result or null if no result exists yet.
   Recipe? _recipe;
+
+  List<Recipe> _recipeHistory = [];
 
   /// Holds the last error message that we've received from the server or null if no
   /// error exists yet.
@@ -82,6 +84,8 @@ class MyHomePageState extends State<MyHomePage> {
         _errorMessage = null;
         _recipe = recipe;
         _isLoading = false;
+        // Add to history
+        _recipeHistory.insert(0, recipe);
       });
     } catch (e) {
       setState(() {
@@ -94,6 +98,19 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Fetch the recipe history from the database when the widget is created.
+    client.recipes.getRecipes().then(
+      (myRecipes) {
+        setState(() {
+          _recipeHistory = myRecipes;
+        });
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -101,45 +118,89 @@ class MyHomePageState extends State<MyHomePage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
+        child: Row(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: TextField(
-                controller: _textEditingController,
-                decoration: const InputDecoration(
-                  hintText:
-                      'Enter ingredients (e.g. "chicken, rice, broccoli")',
-                  // label: Text('Ingredients'),
+            Expanded(
+              flex: 1,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 20.0),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  child: Column(children: [
+                    Text('Recipe History',
+                        style: Theme.of(context).textTheme.headlineMedium),
+                    Expanded(
+                      child: ListView.builder(
+                          itemCount: _recipeHistory.length,
+                          itemBuilder: (context, index) {
+                            final recipe = _recipeHistory[index];
+                            return ListTile(
+                              onTap: () {
+                                _textEditingController.text =
+                                    recipe.ingredients;
+                                setState(() {
+                                  _recipe = recipe;
+                                });
+                              },
+                              title: Text(recipe.text.split('\n').first),
+                              subtitle:
+                                  Text('${recipe.author} on ${recipe.date}'),
+                            );
+                          }),
+                    )
+                  ]),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: ElevatedButton(
-                // prevent the user from calling the method again while the 
-                //request is in progress.
-                onPressed: _isLoading ? null : _callGenerateRecipe,
-
-                child: _isLoading
-                    ? Column(
-                        children: [
-                          // Show a loading indicator and a message while the
-                          // request is in progress.
-                          const CircularProgressIndicator(),
-                          const SizedBox(height: 8),
-                          const Text('Loading...'),
-                        ],
-                      )
-                    : const Text('Generate Recipe'),
               ),
             ),
             Expanded(
-              child: SingleChildScrollView(
-                child: ResultDisplay(
-                  resultMessage: _recipe != null ? '${_recipe?.author} on ${_recipe?.date}:\n ${_recipe?.text}': null,
-                  errorMessage: _errorMessage,
-                ),
+              flex: 3,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20.0),
+                    child: TextField(
+                      controller: _textEditingController,
+                      decoration: const InputDecoration(
+                        hintText:
+                            'Enter ingredients (e.g. "chicken, rice, broccoli")',
+                        // label: Text('Ingredients'),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: ElevatedButton(
+                      // prevent the user from calling the method again while the
+                      //request is in progress.
+                      onPressed: _isLoading ? null : _callGenerateRecipe,
+
+                      child: _isLoading
+                          ? Column(
+                              children: [
+                                // Show a loading indicator and a message while the
+                                // request is in progress.
+                                const CircularProgressIndicator(),
+                                const SizedBox(height: 8),
+                                const Text('Loading...'),
+                              ],
+                            )
+                          : const Text('Generate Recipe'),
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: ResultDisplay(
+                        resultMessage: _recipe != null
+                            ? '${_recipe?.author} on ${_recipe?.date}:\n ${_recipe?.text}'
+                            : null,
+                        errorMessage: _errorMessage,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

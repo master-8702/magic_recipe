@@ -28,6 +28,13 @@ class EndpointRecipes extends _i1.EndpointRef {
         'generateRecipe',
         {'ingredients': ingredients},
       );
+
+  _i2.Future<List<_i3.Recipe>> getRecipes() =>
+      caller.callServerEndpoint<List<_i3.Recipe>>(
+        'recipes',
+        'getRecipes',
+        {},
+      );
 }
 
 /// This is an example endpoint that returns a greeting message through its [hello] method.

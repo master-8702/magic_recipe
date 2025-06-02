@@ -38,4 +38,14 @@ class RecipesEndpoint extends Endpoint {
 
     return recipeWithId;
   }
+
+// an endpoint to get all recipes from the database
+  Future<List<Recipe>> getRecipes(Session session) async {
+    // Fetch all recipes from the database
+    final recipes = await Recipe.db
+        .find(session, orderBy: (t) => t.date, orderDescending: true);
+
+    // Return the list of recipes
+    return recipes;
+  }
 }
