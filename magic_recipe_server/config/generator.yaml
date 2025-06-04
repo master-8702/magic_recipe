@@ -2,3 +2,9 @@ type: server
 
 client_package_path: ../magic_recipe_client
 server_test_tools_path: test/integration/test_tools
+
+# here we generate stuff, that the endpoints will not be generated under serverpod_auth
+# rather under auth (just for convenience purposes)
+modules:
+  serverpod_auth:
+    nickname: auth

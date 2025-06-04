@@ -1,6 +1,10 @@
-import 'package:magic_recipe_client/magic_recipe_client.dart';
 import 'package:flutter/material.dart';
+import 'package:serverpod_auth_email_flutter/serverpod_auth_email_flutter.dart';
+import 'package:serverpod_auth_shared_flutter/serverpod_auth_shared_flutter.dart';
+
 import 'package:serverpod_flutter/serverpod_flutter.dart';
+
+import 'package:magic_recipe_client/magic_recipe_client.dart';
 
 /// Sets up a global client object that can be used to talk to the server from
 /// anywhere in our app. The client is generated from your server code
@@ -13,18 +17,30 @@ late final Client client;
 
 late String serverUrl;
 
-void main() {
-  // When you are running the app on a physical device, you need to set the
-  // server URL to the IP address of your computer. You can find the IP
+late final SessionManager sessionManager;
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // When we are running the app on a physical device, we need to set the
+  // server URL to the IP address of our computer. we can find the IP
   // address by running `ipconfig` on Windows or `ifconfig` on Mac/Linux.
-  // You can set the variable when running or building your app like this:
+  // we can set the variable when running or building our app like this:
   // E.g. `flutter run --dart-define=SERVER_URL=https://api.example.com/`
   const serverUrlFromEnv = String.fromEnvironment('SERVER_URL');
   final serverUrl =
       serverUrlFromEnv.isEmpty ? 'http://$localhost:8080/' : serverUrlFromEnv;
 
-  client = Client(serverUrl)
-    ..connectivityMonitor = FlutterConnectivityMonitor();
+  client = Client(
+    serverUrl,
+    authenticationKeyManager: FlutterAuthenticationKeyManager(),
+  )..connectivityMonitor = FlutterConnectivityMonitor();
+
+  sessionManager = SessionManager(
+    caller: client.modules.auth,
+  );
+
+  sessionManager.initialize();
 
   runApp(const MyApp());
 }
@@ -39,7 +55,43 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Magic Recipe Generator'),
+      home: sessionManager.isSignedIn
+          ? const MyHomePage(title: 'Magic Recipe Generator')
+          : const LoginPage(),
+    );
+  }
+}
+
+class LoginPage extends StatelessWidget {
+  const LoginPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Login To Magic Recipe Generator'),
+      ),
+      body: Center(
+        // here the SignInWithEmailButton is provided by the
+        // serverpod_auth_email_flutter package. It is a button that allows the
+        // user to sign in with their email and password. It will automatically
+        // handle the sign-in process and call the onSignedIn callback when the
+        // user has successfully signed in.
+        child: SignInWithEmailButton(
+            caller: client.modules.auth,
+            // The onSignedIn callback is called when the user has successfully
+            // signed in.
+            onSignedIn: () async {
+              // Navigate to the login page provided by the auth(serverpod_auth) module.
+              await Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      MyHomePage(title: 'Magic Recipe Generator'),
+                ),
+              );
+            }),
+      ),
     );
   }
 }
@@ -115,6 +167,20 @@ class MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+        actions: [
+          IconButton(
+              onPressed: () async {
+                await sessionManager.signOutDevice();
+                if (context.mounted) {
+                  Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => LoginPage(),
+                      ));
+                }
+              },
+              icon: Icon(Icons.logout))
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
