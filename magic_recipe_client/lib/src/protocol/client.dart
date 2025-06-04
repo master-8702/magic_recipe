@@ -35,6 +35,13 @@ class EndpointRecipes extends _i1.EndpointRef {
         'getRecipes',
         {},
       );
+
+  _i2.Future<void> deleteRecipe(int recipeId) =>
+      caller.callServerEndpoint<void>(
+        'recipes',
+        'deleteRecipe',
+        {'recipeId': recipeId},
+      );
 }
 
 /// This is an example endpoint that returns a greeting message through its [hello] method.

@@ -148,6 +148,32 @@ class MyHomePageState extends State<MyHomePage> {
                               title: Text(recipe.text.split('\n').first),
                               subtitle:
                                   Text('${recipe.author} on ${recipe.date}'),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete),
+                                color: Colors.red[300],
+                                onPressed: () {
+                                  // Call the deleteRecipe method when the button is pressed
+                                  client.recipes.deleteRecipe(recipe.id!).then(
+                                    (_) {
+                                      // Remove the recipe from the history
+                                      setState(() {
+                                        _recipeHistory.removeAt(index);
+                                        // If the deleted recipe was the current recipe, reset it
+                                        if (_recipe?.id == recipe.id) {
+                                          _recipe = null;
+                                        }
+                                      });
+                                    },
+                                  ).catchError((error) {
+                                    // Handle any errors that occur during deletion
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(SnackBar(
+                                      content:
+                                          Text('Error deleting recipe: $error'),
+                                    ));
+                                  });
+                                },
+                              ),
                             );
                           }),
                     )

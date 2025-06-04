@@ -1,5 +1,6 @@
 recipes:
   - generateRecipe:
   - getRecipes:
+  - deleteRecipe:
 greeting:
   - hello:

@@ -61,10 +61,26 @@ class RecipesEndpoint extends Endpoint {
 // an endpoint to get all recipes from the database
   Future<List<Recipe>> getRecipes(Session session) async {
     // Fetch all recipes from the database
-    final recipes = await Recipe.db
-        .find(session, orderBy: (t) => t.date, orderDescending: true);
+    final recipes = await Recipe.db.find(session,
+        where: (t) => t.deletedAt.equals(null),
+        orderBy: (t) => t.date,
+        orderDescending: true);
 
     // Return the list of recipes
     return recipes;
+  }
+
+  Future<void> deleteRecipe(Session session, int recipeId) async {
+    // Check if the recipe with the given ID exists
+    final recipe = await Recipe.db.findById(session, recipeId);
+    if (recipe == null) {
+      throw Exception('Recipe with id $recipeId not found.');
+    }
+    // Mark the recipe as deleted by setting the deletedAt field to the current
+    // date and time
+    // This is a soft delete, meaning the recipe is not removed from the database,
+    // but marked as deleted.
+    recipe.deletedAt = DateTime.now();
+    await Recipe.db.updateRow(session, recipe);
   }
 }
