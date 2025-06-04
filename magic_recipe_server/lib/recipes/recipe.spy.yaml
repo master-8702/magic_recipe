@@ -7,3 +7,4 @@ fields:
   date: DateTime
   ingredients: String
   deletedAt: DateTime?, scope=serverOnly
+  userId: int?, scope=serverOnly
