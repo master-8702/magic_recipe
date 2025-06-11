@@ -156,6 +156,36 @@ class Endpoints extends _i1.EndpointDispatch {
             params['userId'],
           ),
         ),
+        'triggerDeletedRecipeCleanup': _i1.MethodConnector(
+          name: 'triggerDeletedRecipeCleanup',
+          params: {},
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['admin'] as _i3.AdminEndpoint)
+                  .triggerDeletedRecipeCleanup(session),
+        ),
+        'scheduleDeletedRecipeCleanup': _i1.MethodConnector(
+          name: 'scheduleDeletedRecipeCleanup',
+          params: {},
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['admin'] as _i3.AdminEndpoint)
+                  .scheduleDeletedRecipeCleanup(session),
+        ),
+        'stopCleanupTask': _i1.MethodConnector(
+          name: 'stopCleanupTask',
+          params: {},
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['admin'] as _i3.AdminEndpoint)
+                  .stopCleanupTask(session),
+        ),
       },
     );
     connectors['greeting'] = _i1.EndpointConnector(

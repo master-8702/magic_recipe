@@ -13,8 +13,33 @@ class AdminDashboard extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 20,
           children: [
             const Text('Magic Recipe Generator Admin Dashboard'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              spacing: 20,
+              children: [
+                ElevatedButton(
+                  onPressed: () async {
+                    await client.admin.triggerDeletedRecipeCleanup();
+                  },
+                  child: const Text('Trigger deleted recipe cleanup'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    await client.admin.scheduleDeletedRecipeCleanup();
+                  },
+                  child: const Text('Schedule deleted recipe cleanup'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    await client.admin.stopCleanupTask();
+                  },
+                  child: const Text('Stop scheduled recipe cleanup'),
+                ),
+              ],
+            ),
             const Text('List of users'),
             const SizedBox(height: 20),
             Expanded(child: UserList()),

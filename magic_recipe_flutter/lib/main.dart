@@ -165,8 +165,6 @@ class MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    print('teeee');
-    print(sessionManager.signedInUser?.scopeNames);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
