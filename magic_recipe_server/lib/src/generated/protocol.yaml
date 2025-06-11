@@ -2,5 +2,10 @@ recipes:
   - generateRecipe:
   - getRecipes:
   - deleteRecipe:
+admin:
+  - listUsers:
+  - blockUser:
+  - unblockUser:
+  - deleteUser:
 greeting:
   - hello:

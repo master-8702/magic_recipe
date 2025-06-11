@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:serverpod_auth_email_flutter/serverpod_auth_email_flutter.dart';
-import 'package:serverpod_auth_shared_flutter/serverpod_auth_shared_flutter.dart';
+import 'package:magic_recipe_flutter/admin_dashboard.dart';
 
 import 'package:serverpod_flutter/serverpod_flutter.dart';
+import 'package:serverpod_auth_email_flutter/serverpod_auth_email_flutter.dart';
+import 'package:serverpod_auth_shared_flutter/serverpod_auth_shared_flutter.dart';
 
 import 'package:magic_recipe_client/magic_recipe_client.dart';
 
@@ -164,10 +165,26 @@ class MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    print('teeee');
+    print(sessionManager.signedInUser?.scopeNames);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
         actions: [
+          // Show nav button if we are admin
+          if (sessionManager.signedInUser?.scopeNames
+                  .contains('serverpod.admin') ??
+              false)
+            IconButton(
+                icon: const Icon(Icons.admin_panel_settings),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AdminDashboard(),
+                    ),
+                  );
+                }),
           IconButton(
               onPressed: () async {
                 await sessionManager.signOutDevice();

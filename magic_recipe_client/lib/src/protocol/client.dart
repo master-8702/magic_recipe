@@ -12,8 +12,8 @@
 import 'package:serverpod_client/serverpod_client.dart' as _i1;
 import 'dart:async' as _i2;
 import 'package:magic_recipe_client/src/protocol/recipes/recipe.dart' as _i3;
-import 'package:magic_recipe_client/src/protocol/greeting.dart' as _i4;
-import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i5;
+import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i4;
+import 'package:magic_recipe_client/src/protocol/greeting.dart' as _i5;
 import 'protocol.dart' as _i6;
 
 /// {@category Endpoint}
@@ -45,6 +45,39 @@ class EndpointRecipes extends _i1.EndpointRef {
       );
 }
 
+/// {@category Endpoint}
+class EndpointAdmin extends _i1.EndpointRef {
+  EndpointAdmin(_i1.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'admin';
+
+  _i2.Future<List<_i4.UserInfo>> listUsers() =>
+      caller.callServerEndpoint<List<_i4.UserInfo>>(
+        'admin',
+        'listUsers',
+        {},
+      );
+
+  _i2.Future<void> blockUser(int userId) => caller.callServerEndpoint<void>(
+        'admin',
+        'blockUser',
+        {'userId': userId},
+      );
+
+  _i2.Future<void> unblockUser(int userId) => caller.callServerEndpoint<void>(
+        'admin',
+        'unblockUser',
+        {'userId': userId},
+      );
+
+  _i2.Future<void> deleteUser(int userId) => caller.callServerEndpoint<void>(
+        'admin',
+        'deleteUser',
+        {'userId': userId},
+      );
+}
+
 /// This is an example endpoint that returns a greeting message through its [hello] method.
 /// {@category Endpoint}
 class EndpointGreeting extends _i1.EndpointRef {
@@ -54,8 +87,8 @@ class EndpointGreeting extends _i1.EndpointRef {
   String get name => 'greeting';
 
   /// Returns a personalized greeting message: "Hello {name}".
-  _i2.Future<_i4.Greeting> hello(String name) =>
-      caller.callServerEndpoint<_i4.Greeting>(
+  _i2.Future<_i5.Greeting> hello(String name) =>
+      caller.callServerEndpoint<_i5.Greeting>(
         'greeting',
         'hello',
         {'name': name},
@@ -64,10 +97,10 @@ class EndpointGreeting extends _i1.EndpointRef {
 
 class Modules {
   Modules(Client client) {
-    auth = _i5.Caller(client);
+    auth = _i4.Caller(client);
   }
 
-  late final _i5.Caller auth;
+  late final _i4.Caller auth;
 }
 
 class Client extends _i1.ServerpodClientShared {
@@ -97,11 +130,14 @@ class Client extends _i1.ServerpodClientShared {
               disconnectStreamsOnLostInternetConnection,
         ) {
     recipes = EndpointRecipes(this);
+    admin = EndpointAdmin(this);
     greeting = EndpointGreeting(this);
     modules = Modules(this);
   }
 
   late final EndpointRecipes recipes;
+
+  late final EndpointAdmin admin;
 
   late final EndpointGreeting greeting;
 
@@ -110,6 +146,7 @@ class Client extends _i1.ServerpodClientShared {
   @override
   Map<String, _i1.EndpointRef> get endpointRefLookup => {
         'recipes': recipes,
+        'admin': admin,
         'greeting': greeting,
       };
 

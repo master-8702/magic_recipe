@@ -35,6 +35,17 @@ void run(List<String> args) async {
       print('Validation code: $validationCode');
       return true;
     },
+    onUserCreated: (Session session, auth.UserInfo userInfo) async {
+      if (userInfo.email?.endsWith('ibrahimselman.com') ?? false) {
+        print('pipipi');
+        // Add admin scope to the user
+        await auth.Users.updateUserScopes(session, userInfo.id!, {Scope.admin});
+        session.log(
+          'User ${userInfo.email} created with admin scope',
+          level: LogLevel.info,
+        );
+      }
+    },
   ));
   // Setup a default page at the web root.
   pod.webServer.addRoute(RouteRoot(), '/');
