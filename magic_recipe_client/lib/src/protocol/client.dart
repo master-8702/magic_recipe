@@ -23,11 +23,17 @@ class EndpointRecipes extends _i1.EndpointRef {
   @override
   String get name => 'recipes';
 
-  _i2.Future<_i3.Recipe> generateRecipe(String ingredients) =>
+  _i2.Future<_i3.Recipe> generateRecipe(
+    String ingredients, [
+    String? imagePath,
+  ]) =>
       caller.callServerEndpoint<_i3.Recipe>(
         'recipes',
         'generateRecipe',
-        {'ingredients': ingredients},
+        {
+          'ingredients': ingredients,
+          'imagePath': imagePath,
+        },
       );
 
   _i2.Future<List<_i3.Recipe>> getRecipes() =>
@@ -42,6 +48,37 @@ class EndpointRecipes extends _i1.EndpointRef {
         'recipes',
         'deleteRecipe',
         {'recipeId': recipeId},
+      );
+
+  /// An endpoint to request a direct file upload description for an image.
+  /// This method generates a unique path for the file using a UUID to prevent
+  /// collisions and enumeration attacks. It returns a tuple containing the
+  _i2.Future<(String?, String)> getUploadDescription(String filename) =>
+      caller.callServerEndpoint<(String?, String)>(
+        'recipes',
+        'getUploadDescription',
+        {'filename': filename},
+      );
+
+  /// An endpoint to verify if the file upload was successful
+  _i2.Future<bool> verifyUpload(String path) => caller.callServerEndpoint<bool>(
+        'recipes',
+        'verifyUpload',
+        {'path': path},
+      );
+
+  /// An endpoint to get the public URL for a file path.
+  _i2.Future<String> getPublicUrlForPath(String path) =>
+      caller.callServerEndpoint<String>(
+        'recipes',
+        'getPublicUrlForPath',
+        {'path': path},
+      );
+
+  _i2.Future<void> deleteImage(String path) => caller.callServerEndpoint<void>(
+        'recipes',
+        'deleteImage',
+        {'path': path},
       );
 }
 

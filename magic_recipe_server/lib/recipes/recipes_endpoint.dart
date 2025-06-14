@@ -1,7 +1,6 @@
 import 'package:meta/meta.dart';
 import 'package:serverpod/serverpod.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
-
 import 'package:magic_recipe_server/src/generated/protocol.dart';
 
 // here we are declaring global function to generate content using Gemini API,
@@ -12,11 +11,11 @@ import 'package:magic_recipe_server/src/generated/protocol.dart';
 // and warn that this function is only to be used in this file and/or for
 // testing purposes.
 @visibleForTesting
-var generateContent = (String apiKey, String prompt) async {
+var generateContent = (String apiKey, List<Content> prompt) async {
   // Initialize the GenerativeModel with the Gemini API key and model
   final gemini = GenerativeModel(model: 'gemini-2.0-flash', apiKey: apiKey);
   // generate the content using the passed prompt
-  final response = await gemini.generateContent([Content.text(prompt)]);
+  final response = await gemini.generateContent(prompt);
   return response.text;
 };
 
@@ -26,7 +25,8 @@ class RecipesEndpoint extends Endpoint {
   @override
   bool get requireLogin => true;
 
-  Future<Recipe> generateRecipe(Session session, String ingredients) async {
+  Future<Recipe> generateRecipe(Session session, String ingredients,
+      [String? imagePath]) async {
     final geminiApiKey = session.passwords['gemini'];
     if (geminiApiKey == null || geminiApiKey.isEmpty) {
       throw Exception('Gemini API key is not set in the session passwords.');
@@ -54,14 +54,36 @@ class RecipesEndpoint extends Endpoint {
       return recipeWithId;
     }
 
+    final List<Content> prompt = [];
+    if (imagePath != null && imagePath.isNotEmpty) {
+      final imageData = await session.storage
+          .retrieveFile(storageId: 'public', path: imagePath);
+      if (imageData == null) {
+        throw Exception('Image not found');
+      }
+
+      prompt.add(
+        Content.data(
+          'image/jpeg',
+          imageData.buffer.asUint8List(),
+        ),
+      );
+      prompt.add(Content.text('''
+Generate a recipe using the detected ingredients. Always put the title
+of the recipe in the first line, and then the instructions. The recipe
+should be easy to follow and include all necessary steps. Please provide
+a detailed recipe. Only put the title in the first line, no markup.'''));
+    }
+
     // Prepare the prompt for the recipe generation
-    final prompt =
+    final textPrompt =
         'Generate a recipe using the following ingredients: $ingredients, always put the title '
         'of the recipe in the first line, and then the instructions. The recipe should be easy '
         'to follow and include all necessary steps. Please provide a detailed recipe.';
 
-//
-    // final response = await gemini.generateContent([Content.text(prompt)]);
+    if (prompt.isEmpty) {
+      prompt.add(Content.text(textPrompt));
+    }
 
     // final responseText = response.text;
     final responseText = await generateContent(geminiApiKey, prompt);
@@ -77,7 +99,8 @@ class RecipesEndpoint extends Endpoint {
         author: 'Gemini 2.0 flash',
         text: responseText,
         date: DateTime.now(),
-        ingredients: ingredients);
+        ingredients: ingredients,
+        imagePath: imagePath);
 
     // Cache the generated recipe in the local cache
     await session.caches.local
@@ -122,5 +145,47 @@ class RecipesEndpoint extends Endpoint {
     // but marked as deleted.
     recipe.deletedAt = DateTime.now();
     await Recipe.db.updateRow(session, recipe);
+  }
+
+  /// An endpoint to request a direct file upload description for an image.
+  /// This method generates a unique path for the file using a UUID to prevent
+  /// collisions and enumeration attacks. It returns a tuple containing the
+  Future<(String? description, String path)> getUploadDescription(
+      Session session, String filename) async {
+    const Uuid uuid = Uuid();
+
+    // Generate a unique path for the file
+    // Using a uuid prevents collisions and enumeration attacks
+    final path = 'uploads/${uuid.v4()}/$filename';
+
+    final description = await session.storage.createDirectFileUploadDescription(
+      storageId: 'public',
+      path: path,
+    );
+
+    return (description, path);
+  }
+
+  /// An endpoint to verify if the file upload was successful
+  Future<bool> verifyUpload(Session session, String path) async {
+    return await session.storage.verifyDirectFileUpload(
+      storageId: 'public',
+      path: path,
+    );
+  }
+
+  /// An endpoint to get the public URL for a file path.
+  Future<String> getPublicUrlForPath(Session session, String path) async {
+    final publicUrl =
+        await session.storage.getPublicUrl(storageId: 'public', path: path);
+
+    session.log('Public URL:\n$publicUrl');
+    return publicUrl.toString();
+  }
+
+  Future<void> deleteImage(Session session, String path) async {
+    // Delete the image from the storage
+    await session.storage.deleteFile(storageId: 'public', path: path);
+    session.log('Deleted image at path: $path');
   }
 }

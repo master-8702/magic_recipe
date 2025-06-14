@@ -13,7 +13,8 @@ import 'package:serverpod/serverpod.dart' as _i1;
 import '../../recipes/recipes_endpoint.dart' as _i2;
 import '../admin_endpoint.dart' as _i3;
 import '../greeting_endpoint.dart' as _i4;
-import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i5;
+import 'package:magic_recipe_server/src/generated/protocol.dart' as _i5;
+import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i6;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
@@ -49,7 +50,12 @@ class Endpoints extends _i1.EndpointDispatch {
               name: 'ingredients',
               type: _i1.getType<String>(),
               nullable: false,
-            )
+            ),
+            'imagePath': _i1.ParameterDescription(
+              name: 'imagePath',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
           },
           call: (
             _i1.Session session,
@@ -58,6 +64,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (endpoints['recipes'] as _i2.RecipesEndpoint).generateRecipe(
             session,
             params['ingredients'],
+            params['imagePath'],
           ),
         ),
         'getRecipes': _i1.MethodConnector(
@@ -85,6 +92,80 @@ class Endpoints extends _i1.EndpointDispatch {
               (endpoints['recipes'] as _i2.RecipesEndpoint).deleteRecipe(
             session,
             params['recipeId'],
+          ),
+        ),
+        'getUploadDescription': _i1.MethodConnector(
+          name: 'getUploadDescription',
+          params: {
+            'filename': _i1.ParameterDescription(
+              name: 'filename',
+              type: _i1.getType<String>(),
+              nullable: false,
+            )
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['recipes'] as _i2.RecipesEndpoint)
+                  .getUploadDescription(
+                    session,
+                    params['filename'],
+                  )
+                  .then((record) => _i5.mapRecordToJson(record)),
+        ),
+        'verifyUpload': _i1.MethodConnector(
+          name: 'verifyUpload',
+          params: {
+            'path': _i1.ParameterDescription(
+              name: 'path',
+              type: _i1.getType<String>(),
+              nullable: false,
+            )
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['recipes'] as _i2.RecipesEndpoint).verifyUpload(
+            session,
+            params['path'],
+          ),
+        ),
+        'getPublicUrlForPath': _i1.MethodConnector(
+          name: 'getPublicUrlForPath',
+          params: {
+            'path': _i1.ParameterDescription(
+              name: 'path',
+              type: _i1.getType<String>(),
+              nullable: false,
+            )
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['recipes'] as _i2.RecipesEndpoint).getPublicUrlForPath(
+            session,
+            params['path'],
+          ),
+        ),
+        'deleteImage': _i1.MethodConnector(
+          name: 'deleteImage',
+          params: {
+            'path': _i1.ParameterDescription(
+              name: 'path',
+              type: _i1.getType<String>(),
+              nullable: false,
+            )
+          },
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+          ) async =>
+              (endpoints['recipes'] as _i2.RecipesEndpoint).deleteImage(
+            session,
+            params['path'],
           ),
         ),
       },
@@ -212,6 +293,6 @@ class Endpoints extends _i1.EndpointDispatch {
         )
       },
     );
-    modules['serverpod_auth'] = _i5.Endpoints()..initializeEndpoints(server);
+    modules['serverpod_auth'] = _i6.Endpoints()..initializeEndpoints(server);
   }
 }

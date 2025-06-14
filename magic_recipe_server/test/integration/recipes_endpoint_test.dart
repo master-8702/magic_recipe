@@ -1,3 +1,4 @@
+import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:test/test.dart';
 
 import 'test_tools/serverpod_test_tools.dart';
@@ -25,27 +26,29 @@ void main() {
     test(
         'When calling generateRecipe with ingredients, gemini is called with a prompt'
         ' which includes the ingredients', () async {
-      // here we are mocking the authentication info to avoid
-      // the need to have a real user logged in, and we are using
-      // the AuthenticationOverride class to do that. (creating user id 1)
-      final testSessionBuilder = testUnAuthSessionBuilder.copyWith(
+      final sessionBuilder = testUnAuthSessionBuilder.copyWith(
           authentication: AuthenticationOverride.authenticationInfo(1, {}));
 
-      String capturedPrompt = '';
+      List<Content> capturedPrompt = [];
 
       generateContent = (_, prompt) {
         capturedPrompt = prompt;
         return Future.value('Mock Recipe');
       };
 
-      // here the test file knows that the generateContent function
-      // is mocked and it will not call the actual generateContent function,
-      // all because of the @visibleForTesting annotation in the top-level
-      // generateContent variable.
       final recipe = await endpoints.recipes
-          .generateRecipe(testSessionBuilder, 'chicken, rice, broccoli');
+          .generateRecipe(sessionBuilder, 'chicken, rice, broccoli');
       expect(recipe.text, 'Mock Recipe');
-      expect(capturedPrompt, contains('chicken, rice, broccoli'));
+      final capturedPromptString = capturedPrompt
+          .map((e) => e.parts
+              .map((part) => (part is TextPart) ? part.text : null)
+              .nonNulls
+              .toList()
+              .join(' ')
+              .trim())
+          .toList()
+          .join(' ');
+      expect(capturedPromptString, contains('chicken, rice, broccoli'));
     });
 
     // testing soft deletion of recipes
@@ -183,8 +186,9 @@ void main() {
       final sessionBuilder = testUnAuthSessionBuilder.copyWith(
           authentication: AuthenticationOverride.authenticationInfo(1, {}));
       final session = sessionBuilder.build();
+      await session.caches.local.clear();
 
-      String capturedPrompt = '';
+      List<Content> capturedPrompt = [];
       final ingredients = 'chicken, rice, broccoli';
 
       generateContent = (_, prompt) {
@@ -195,20 +199,29 @@ void main() {
       final recipe =
           await endpoints.recipes.generateRecipe(sessionBuilder, ingredients);
       expect(recipe.text, 'Mock Recipe');
-      expect(capturedPrompt, contains(ingredients));
+      final capturedPromptString = capturedPrompt
+          .map((e) => e.parts
+              .map((part) => (part is TextPart) ? part.text : null)
+              .nonNulls
+              .toList()
+              .join(' ')
+              .trim())
+          .toList()
+          .join(' ');
+      expect(capturedPromptString, contains(ingredients));
       final cache = await session.caches.local
           .get<Recipe>('recipe-${ingredients.hashCode}');
       expect(cache, isNotNull);
       expect(cache?.text, 'Mock Recipe');
 
       // reset
-      capturedPrompt = '';
+      capturedPrompt = [];
 
       // Call the endpoint again with the same ingredients
       final recipe2 =
           await endpoints.recipes.generateRecipe(sessionBuilder, ingredients);
       expect(recipe2.text, 'Mock Recipe');
-      expect(capturedPrompt, equals(''));
+      expect(capturedPrompt, isEmpty);
     });
   });
 }

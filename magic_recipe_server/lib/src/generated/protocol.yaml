@@ -2,6 +2,10 @@ recipes:
   - generateRecipe:
   - getRecipes:
   - deleteRecipe:
+  - getUploadDescription:
+  - verifyUpload:
+  - getPublicUrlForPath:
+  - deleteImage:
 admin:
   - listUsers:
   - blockUser:

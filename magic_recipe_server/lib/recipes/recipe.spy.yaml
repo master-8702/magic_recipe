@@ -8,3 +8,5 @@ fields:
   ingredients: String
   deletedAt: DateTime?, scope=serverOnly
   userId: int?, scope=serverOnly
+  ### Optional field for storing the path of ingredient image (if the user uploaded one)
+  imagePath: String? 

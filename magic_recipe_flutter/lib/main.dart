@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:magic_recipe_flutter/admin_dashboard.dart';
+import 'package:magic_recipe_flutter/image_widgets.dart';
 
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 import 'package:serverpod_auth_email_flutter/serverpod_auth_email_flutter.dart';
@@ -117,6 +118,7 @@ class MyHomePageState extends State<MyHomePage> {
   String? _errorMessage;
 
   final _textEditingController = TextEditingController();
+  String? _imagePath;
 
   bool _isLoading = false;
 
@@ -129,8 +131,8 @@ class MyHomePageState extends State<MyHomePage> {
         _isLoading = true;
       });
 
-      final recipe =
-          await client.recipes.generateRecipe(_textEditingController.text);
+      final recipe = await client.recipes
+          .generateRecipe(_textEditingController.text, _imagePath);
 
       setState(() {
         // Set the result message and reset the error message.
@@ -224,6 +226,10 @@ class MyHomePageState extends State<MyHomePage> {
                                     recipe.ingredients;
                                 setState(() {
                                   _recipe = recipe;
+                                  _errorMessage = null;
+                                  _imagePath = recipe.imagePath;
+                                  _textEditingController.text =
+                                      recipe.ingredients;
                                 });
                               },
                               title: Text(recipe.text.split('\n').first),
@@ -265,16 +271,32 @@ class MyHomePageState extends State<MyHomePage> {
             Expanded(
               flex: 3,
               child: Column(
+                spacing: 20,
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(bottom: 20.0),
-                    child: TextField(
-                      controller: _textEditingController,
-                      decoration: const InputDecoration(
-                        hintText:
-                            'Enter ingredients (e.g. "chicken, rice, broccoli")',
-                        // label: Text('Ingredients'),
-                      ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _textEditingController,
+                            decoration: const InputDecoration(
+                              hintText:
+                                  'Enter ingredients (e.g. "chicken, rice, broccoli")',
+                              // label: Text('Ingredients'),
+                            ),
+                          ),
+                        ),
+                        ImageUploadButton(
+                          key: ValueKey(_imagePath),
+                          onImagePathChanged: (imagePath) {
+                            setState(() {
+                              _imagePath = imagePath;
+                            });
+                          },
+                          imagePath: _imagePath,
+                        ),
+                      ],
                     ),
                   ),
                   Padding(
