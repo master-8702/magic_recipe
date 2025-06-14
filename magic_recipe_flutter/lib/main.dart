@@ -131,16 +131,25 @@ class MyHomePageState extends State<MyHomePage> {
         _isLoading = true;
       });
 
-      final recipe = await client.recipes
-          .generateRecipe(_textEditingController.text, _imagePath);
+      await for (final result in client.recipes
+          .generateRecipeStream(_textEditingController.text, _imagePath)) {
+        // If we receive a result, set it as the recipe.
+
+        setState(() {
+          _errorMessage = null;
+          _recipe = result;
+        });
+      }
 
       setState(() {
-        // Set the result message and reset the error message.
-        _errorMessage = null;
-        _recipe = recipe;
         _isLoading = false;
+        if (_recipe == null) {
+          // If no recipe was generated, set an error message.
+          _errorMessage = 'No recipe generated. Please try again.';
+          return;
+        }
         // Add to history
-        _recipeHistory.insert(0, recipe);
+        _recipeHistory.insert(0, _recipe!);
       });
     } catch (e) {
       setState(() {

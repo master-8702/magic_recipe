@@ -11,12 +11,17 @@ import 'package:magic_recipe_server/src/generated/protocol.dart';
 // and warn that this function is only to be used in this file and/or for
 // testing purposes.
 @visibleForTesting
-var generateContent = (String apiKey, List<Content> prompt) async {
-  // Initialize the GenerativeModel with the Gemini API key and model
-  final gemini = GenerativeModel(model: 'gemini-2.0-flash', apiKey: apiKey);
-  // generate the content using the passed prompt
-  final response = await gemini.generateContent(prompt);
-  return response.text;
+var generateContentStream = (String apiKey, List<Content> prompt) async* {
+  await for (final message in GenerativeModel(
+    model: 'gemini-2.0-flash',
+    apiKey: apiKey,
+  ).generateContentStream(
+    prompt,
+  )) {
+    if (message.text != null) {
+      yield message.text!;
+    }
+  }
 };
 
 class RecipesEndpoint extends Endpoint {
@@ -25,8 +30,8 @@ class RecipesEndpoint extends Endpoint {
   @override
   bool get requireLogin => true;
 
-  Future<Recipe> generateRecipe(Session session, String ingredients,
-      [String? imagePath]) async {
+  Stream<Recipe> generateRecipeStream(Session session, String ingredients,
+      [String? imagePath]) async* {
     final geminiApiKey = session.passwords['gemini'];
     if (geminiApiKey == null || geminiApiKey.isEmpty) {
       throw Exception('Gemini API key is not set in the session passwords.');
@@ -51,7 +56,8 @@ class RecipesEndpoint extends Endpoint {
 
       // Log the cached recipe
       session.log('Returning cached recipe for ingredients: $ingredients');
-      return recipeWithId;
+      yield recipeWithId;
+      return;
     }
 
     final List<Content> prompt = [];
@@ -86,21 +92,25 @@ a detailed recipe. Only put the title in the first line, no markup.'''));
     }
 
     // final responseText = response.text;
-    final responseText = await generateContent(geminiApiKey, prompt);
-
-//  checking if the gemini response is null or empty
-    if (responseText == null || responseText.isEmpty) {
-      throw Exception('No response received from the Gemini API.');
-    }
+    final responseTextStream = generateContentStream(geminiApiKey, prompt);
 
     final userId = (await session.authenticated)?.userId;
 
-    final recipe = Recipe(
-        author: 'Gemini 2.0 flash',
-        text: responseText,
-        date: DateTime.now(),
-        ingredients: ingredients,
-        imagePath: imagePath);
+    Recipe recipe = Recipe(
+      author: 'Gemini 2.0 flash',
+      text: '',
+      date: DateTime.now(),
+      ingredients: ingredients,
+      imagePath: imagePath,
+    );
+
+    // here we are assigning responseText to the recipe text from the stream
+    // and yielding the recipe to the client as it is being generated
+    await for (final responseText in responseTextStream) {
+      recipe = recipe.copyWith(text: recipe.text + responseText);
+      session.log('Received response stream: $responseText');
+      yield recipe;
+    }
 
     // Cache the generated recipe in the local cache
     await session.caches.local
@@ -113,7 +123,7 @@ a detailed recipe. Only put the title in the first line, no markup.'''));
     // Log the generated recipe
     session.log('Generated recipe for ingredients: $ingredients');
 
-    return recipeWithId;
+    yield recipeWithId;
   }
 
 // an endpoint to get all recipes from the database

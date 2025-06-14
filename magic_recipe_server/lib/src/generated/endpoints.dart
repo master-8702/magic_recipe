@@ -43,30 +43,6 @@ class Endpoints extends _i1.EndpointDispatch {
       name: 'recipes',
       endpoint: endpoints['recipes']!,
       methodConnectors: {
-        'generateRecipe': _i1.MethodConnector(
-          name: 'generateRecipe',
-          params: {
-            'ingredients': _i1.ParameterDescription(
-              name: 'ingredients',
-              type: _i1.getType<String>(),
-              nullable: false,
-            ),
-            'imagePath': _i1.ParameterDescription(
-              name: 'imagePath',
-              type: _i1.getType<String?>(),
-              nullable: true,
-            ),
-          },
-          call: (
-            _i1.Session session,
-            Map<String, dynamic> params,
-          ) async =>
-              (endpoints['recipes'] as _i2.RecipesEndpoint).generateRecipe(
-            session,
-            params['ingredients'],
-            params['imagePath'],
-          ),
-        ),
         'getRecipes': _i1.MethodConnector(
           name: 'getRecipes',
           params: {},
@@ -166,6 +142,34 @@ class Endpoints extends _i1.EndpointDispatch {
               (endpoints['recipes'] as _i2.RecipesEndpoint).deleteImage(
             session,
             params['path'],
+          ),
+        ),
+        'generateRecipeStream': _i1.MethodStreamConnector(
+          name: 'generateRecipeStream',
+          params: {
+            'ingredients': _i1.ParameterDescription(
+              name: 'ingredients',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'imagePath': _i1.ParameterDescription(
+              name: 'imagePath',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          streamParams: {},
+          returnType: _i1.MethodStreamReturnType.streamType,
+          call: (
+            _i1.Session session,
+            Map<String, dynamic> params,
+            Map<String, Stream> streamParams,
+          ) =>
+              (endpoints['recipes'] as _i2.RecipesEndpoint)
+                  .generateRecipeStream(
+            session,
+            params['ingredients'],
+            params['imagePath'],
           ),
         ),
       },
