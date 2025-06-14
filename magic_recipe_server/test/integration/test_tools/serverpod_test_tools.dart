@@ -141,37 +141,40 @@ class _RecipesEndpoint {
 
   final _i2.SerializationManager _serializationManager;
 
-  _i3.Future<_i4.Recipe> generateRecipe(
+  _i3.Stream<_i4.Recipe> generateRecipeStream(
     _i1.TestSessionBuilder sessionBuilder,
     String ingredients, [
     String? imagePath,
-  ]) async {
-    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
-      var _localUniqueSession =
-          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
-        endpoint: 'recipes',
-        method: 'generateRecipe',
-      );
-      try {
-        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+  ]) {
+    var _localTestStreamManager = _i1.TestStreamManager<_i4.Recipe>();
+    _i1.callStreamFunctionAndHandleExceptions(
+      () async {
+        var _localUniqueSession =
+            (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+          endpoint: 'recipes',
+          method: 'generateRecipeStream',
+        );
+        var _localCallContext =
+            await _endpointDispatch.getMethodStreamCallContext(
           createSessionCallback: (_) => _localUniqueSession,
           endpointPath: 'recipes',
-          methodName: 'generateRecipe',
-          parameters: _i1.testObjectToJson({
+          methodName: 'generateRecipeStream',
+          arguments: {
             'ingredients': ingredients,
             'imagePath': imagePath,
-          }),
+          },
+          requestedInputStreams: [],
           serializationManager: _serializationManager,
         );
-        var _localReturnValue = await (_localCallContext.method.call(
+        await _localTestStreamManager.callStreamMethod(
+          _localCallContext,
           _localUniqueSession,
-          _localCallContext.arguments,
-        ) as _i3.Future<_i4.Recipe>);
-        return _localReturnValue;
-      } finally {
-        await _localUniqueSession.close();
-      }
-    });
+          {},
+        );
+      },
+      _localTestStreamManager.outputStreamController,
+    );
+    return _localTestStreamManager.outputStreamController.stream;
   }
 
   _i3.Future<List<_i4.Recipe>> getRecipes(

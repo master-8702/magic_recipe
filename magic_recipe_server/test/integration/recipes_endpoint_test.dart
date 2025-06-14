@@ -2,8 +2,8 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:test/test.dart';
 
 import 'test_tools/serverpod_test_tools.dart';
-
-import 'package:magic_recipe_server/recipes/recipes_endpoint.dart';
+import 'package:magic_recipe_server/recipes/recipes_endpoint.dart'
+    as recipes_endpoint;
 import 'package:magic_recipe_server/src/generated/recipes/recipe.dart';
 
 /// This is our test file for the RecipesEndpoint.
@@ -31,13 +31,16 @@ void main() {
 
       List<Content> capturedPrompt = [];
 
-      generateContent = (_, prompt) {
+      recipes_endpoint.generateContentStream = (object, prompt) async* {
         capturedPrompt = prompt;
-        return Future.value('Mock Recipe');
+        yield 'Mock Recipe';
       };
 
-      final recipe = await endpoints.recipes
-          .generateRecipe(sessionBuilder, 'chicken, rice, broccoli');
+      final recipeStream = endpoints.recipes
+          .generateRecipeStream(sessionBuilder, 'chicken, rice, broccoli');
+      final recipes = await recipeStream.toList();
+      expect(recipes, isNotEmpty);
+      final recipe = recipes.last;
       expect(recipe.text, 'Mock Recipe');
       final capturedPromptString = capturedPrompt
           .map((e) => e.parts
@@ -168,8 +171,12 @@ void main() {
         'when trying to generate a recipe as an unauthenticated user an exception is thrown',
         () async {
       await expectException(
-        () => endpoints.recipes.generateRecipe(
-            testUnAuthSessionBuilder, 'chicken, rice, broccoli'),
+        () async {
+          await endpoints.recipes
+              .generateRecipeStream(
+                  testUnAuthSessionBuilder, 'chicken, rice, broccoli')
+              .toList();
+        },
         isA<ServerpodUnauthenticatedException>(),
       );
     });
@@ -191,15 +198,22 @@ void main() {
       List<Content> capturedPrompt = [];
       final ingredients = 'chicken, rice, broccoli';
 
-      generateContent = (_, prompt) {
+      var generateContentStreamCallCount = 0;
+      recipes_endpoint.generateContentStream = (_, prompt) async* {
+        generateContentStreamCallCount++;
         capturedPrompt = prompt;
-        return Future.value('Mock Recipe');
+        yield 'Mock Recipe';
       };
 
-      final recipe =
-          await endpoints.recipes.generateRecipe(sessionBuilder, ingredients);
-      expect(recipe.text, 'Mock Recipe');
+      final recipeStream1 =
+          endpoints.recipes.generateRecipeStream(sessionBuilder, ingredients);
+      final recipes1 = await recipeStream1.toList();
+      expect(recipes1, isNotEmpty);
+      final recipe1 = recipes1.last;
+      expect(recipe1.text, 'Mock Recipe');
+      expect(generateContentStreamCallCount, 1);
       final capturedPromptString = capturedPrompt
+          // ignore: invalid_use_of_internal_member
           .map((e) => e.parts
               .map((part) => (part is TextPart) ? part.text : null)
               .nonNulls
@@ -217,11 +231,17 @@ void main() {
       // reset
       capturedPrompt = [];
 
-      // Call the endpoint again with the same ingredients
-      final recipe2 =
-          await endpoints.recipes.generateRecipe(sessionBuilder, ingredients);
+      // Call the endpoint again with the same ingredients, should hit cache
+      final recipeStream2 =
+          endpoints.recipes.generateRecipeStream(sessionBuilder, ingredients);
+      final recipes2 = await recipeStream2.toList();
+      expect(recipes2, isNotEmpty);
+      final recipe2 = recipes2.last;
       expect(recipe2.text, 'Mock Recipe');
-      expect(capturedPrompt, isEmpty);
+      expect(
+          generateContentStreamCallCount, 1); // Mock should not be called again
+      expect(capturedPrompt,
+          isEmpty); // capturedPrompt should not have been repopulated
     });
   });
 }
